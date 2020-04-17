@@ -17,20 +17,19 @@ class TCPTools(QtWidgets.QWidget):
         self.MARKER_CONNECT = 'connect'
         self.MARKER_DISCONNECT = 'disconnect'
 
-    def send(self, marker, reciever, message):
+    def sending(self, marker, reciever, message):
         time = strftime("%H:%M:%S %d-%m-%Y", gmtime())
         message = f' |{time}| {message}'
         try:
             self.socket.send(
-                bytes(f'{marker}~{reciever}~[{self.login}]~{message}', encoding='utf-8'))
+                bytes(f'{marker}~{reciever}~[{self.login}]~{message}', encoding='UTF-8'))
         except OSError:
             pass
 
     def connect(self):
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.socket.connect((self.host, self.port))
-        self.send(self.MARKER_CONNECT, self.MARKER_GLOBAL, 'connected')
-
+        self.sending(self.MARKER_CONNECT, self.MARKER_GLOBAL, 'connected')
         self.start_TCP_thread_recieve(None, None)
 
     def get_message(self):
@@ -72,7 +71,7 @@ class TCPTools(QtWidgets.QWidget):
                         data = connection.recv(1024).decode('utf-8').split('~')
                         self.set_client_connection_info(connection, address)
                     else:
-                        data = connection.recv(1024).decode('utf-8').split('~')
+                        data = self.socket.recv(1024).decode('utf-8').split('~')
                     self.set_new_message(data)
                     self.message_signal.emit()
                     time.sleep(2)
@@ -81,11 +80,12 @@ class TCPTools(QtWidgets.QWidget):
 
     def start_TCP_thread_recieve(self, connection, address):
         self.stopped = False
+
         Thread_recieve = threading.Thread(
             target=self.recieve, args=(connection, address), daemon=True)
         Thread_recieve.start()
 
     def disconnect(self):
-        self.send(self.MARKER_DISCONNECT, self.MARKER_GLOBAL, "left")
+        self.sending(self.MARKER_DISCONNECT, self.MARKER_GLOBAL, "left")
         self.stopped = True
         self.socket.close()

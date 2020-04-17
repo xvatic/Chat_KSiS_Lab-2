@@ -19,21 +19,32 @@ class Window(QtWidgets.QWidget):
         self.MARKER_GLOBAL = 'global'
         self.MARKER_CONNECT = 'connect'
         self.MARKER_DISCONNECT = 'disconnect'
+        self.MARKER_CLIENTS = 'clients'
 
         self.signal = Communicate()
         self.signal.new_message_serv.connect(self.new_message_serv)
 
     def request_processing(self, marker, login, client_id, connection):
         if marker == self.MARKER_CONNECT:
-            print(f'CONNECTED CLIENT[{login},{connection}]')
+            active_clients = ''
+            for client_id, login in self.client_info.items():
+                active_clients += f'~{login}~{client_id}'
+
+            connection.send(bytes(f'active_clients{active_clients}'.encode('utf-8')))
+
+            self.client_info[client_id] = login
+            print(client_info[client_id])
 
     def new_message_serv(self):
         data = self.TCPSocket_app.get_message()
         connection, address = self.TCPSocket_app.get_client_connection_info()
-        marker, reciever, login, message_content = data[0], data[1], data[2], data[3]
+        marker, reciever, login, message_content = data[0], data[1], data[2], data[3:]
 
         client_id, client_ip = str(address[1]), address[0]
+
         self.request_processing(marker, login, client_id, connection)
+#        if marker == self.MARKER_CONNECT:
+    #        return f'{marker}~{client_id}~{reciever}~{login}~{message}'
 
     def set_tcp_socket(self, socket):
         self.TCPSocket_app = socket

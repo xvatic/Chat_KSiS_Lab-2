@@ -43,10 +43,8 @@ class UDPTools():
                 while not self.stopped:
                     data, address = self.socket.recvfrom(1024)
                     message = data.decode("utf-8").split()
-                    print(address)
                     self.recieved_ip = message[0]
                     self.recieved_port = message[1]
-                    print(message[0])
                     if self.address_request:
                         self.socket.sendto(
                             (f'{self.host} {str(self.port)}').encode("utf-8"), address)
