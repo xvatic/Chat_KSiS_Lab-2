@@ -27,13 +27,12 @@ class Window(QtWidgets.QWidget):
     def request_processing(self, marker, login, client_id, connection):
         if marker == self.MARKER_CONNECT:
             active_clients = ''
-            for client_id, login in self.client_info.items():
-                active_clients += f'~{login}~{client_id}'
+            for id_value, login_value in self.client_info.items():
+                active_clients += f'~{login_value}~{id_value}'
 
             connection.send(bytes(f'active_clients{active_clients}'.encode('utf-8')))
 
             self.client_info[client_id] = login
-            print(client_info[client_id])
 
     def new_message_serv(self):
         data = self.TCPSocket_app.get_message()
@@ -41,8 +40,8 @@ class Window(QtWidgets.QWidget):
         marker, reciever, login, message_content = data[0], data[1], data[2], data[3:]
 
         client_id, client_ip = str(address[1]), address[0]
-
         self.request_processing(marker, login, client_id, connection)
+
 #        if marker == self.MARKER_CONNECT:
     #        return f'{marker}~{client_id}~{reciever}~{login}~{message}'
 

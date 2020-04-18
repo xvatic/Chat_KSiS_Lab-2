@@ -26,7 +26,6 @@ class Window(QtWidgets.QWidget):
         UDPSocket.start_UDP_thread_send()
         time.sleep(0.05)
         host, port = UDPSocket.transfer_value()
-        print(host, port)
         needed_host = str(host)
         needed_port = int(port)
         UDPSocket.stopped_connection()
@@ -36,6 +35,7 @@ class Window(QtWidgets.QWidget):
 
     def message_processing(self):
         data = self.TCPSocket.get_message()
+        print(data)
         if data[0] == self.MARKER_CLIENTS:
             for i in range(1, len(data), 2):
                 self.ui.comboBox_chatParticipants.addItem(data[i])

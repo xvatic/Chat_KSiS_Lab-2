@@ -44,6 +44,7 @@ class TCPTools(QtWidgets.QWidget):
 
     def accept(self):
         connection, address = self.socket.accept()
+
         self.start_TCP_thread_recieve(connection, address)
         return connection, address
 
