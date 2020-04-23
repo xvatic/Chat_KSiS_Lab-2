@@ -16,10 +16,12 @@ class Window(QtWidgets.QWidget):
         self.clients = {}
         self.message_list = []
         self.client_info = {}
-        self.MARKER_GLOBAL = 'global'
+        self.MARKER_ALL = 'all'
         self.MARKER_CONNECT = 'connect'
         self.MARKER_DISCONNECT = 'disconnect'
+        self.MARKER_COMMON = 'common'
         self.MARKER_CLIENTS = 'clients'
+        self.MARKER_HISTORY = 'history'
 
         self.signal = Communicate()
         self.signal.new_message_serv.connect(self.new_message_serv)
@@ -37,10 +39,35 @@ class Window(QtWidgets.QWidget):
     def new_message_serv(self):
         data = self.TCPSocket_app.get_message()
         connection, address = self.TCPSocket_app.get_client_connection_info()
+        print(data)
         marker, reciever, login, message_content = data[0], data[1], data[2], data[3:]
 
         client_id, client_ip = str(address[1]), address[0]
         self.request_processing(marker, login, client_id, connection)
+
+        message = '~'.join(message_content)
+        message_converted = f'|{client_ip}:{PORT}|{message}'
+        final_message = ''
+        if reciever == self.MARKER_ALL:
+            self.message_list.append(f'{marker}~{client_id}~{reciever}~{login}~{message_converted}')
+
+        if marker == self.MARKER_COMMON:
+            final_message = f'{marker}~{client_id}~{reciever}~{login}~::{message_converted}'
+
+        if marker == self.MARKER_CONNECT or marker == self.MARKER_DISCONNECT:
+            final_message = f'{marker}~{client_id}~{reciever}~{login}~::{message_converted}'
+
+        self.ui.textEdit_server_log.append(f'{message} {address}')
+        self.sending(final_message, reciever, connection)
+
+    def sending(self, message, reciever, connection):
+        for client_value, address_value in self.clients.items():
+            if connection != client_value:
+                if address_value == reciever:
+                    client_value.send(bytes(message.encode('utf-8')))
+                elif reciever == self.MARKER_ALL:
+                    client_value.send(bytes(message.encode('utf-8')))
+
 
 #        if marker == self.MARKER_CONNECT:
     #        return f'{marker}~{client_id}~{reciever}~{login}~{message}'

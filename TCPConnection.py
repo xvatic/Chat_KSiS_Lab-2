@@ -13,7 +13,7 @@ class TCPTools(QtWidgets.QWidget):
         self.server_flag = False
         self.message_signal = signal
 
-        self.MARKER_GLOBAL = 'global'
+        self.MARKER_ALL = 'all'
         self.MARKER_CONNECT = 'connect'
         self.MARKER_DISCONNECT = 'disconnect'
 
@@ -29,7 +29,7 @@ class TCPTools(QtWidgets.QWidget):
     def connect(self):
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.socket.connect((self.host, self.port))
-        self.sending(self.MARKER_CONNECT, self.MARKER_GLOBAL, 'connected')
+        self.sending(self.MARKER_CONNECT, self.MARKER_ALL, 'connected')
         self.start_TCP_thread_recieve(None, None)
 
     def get_message(self):
