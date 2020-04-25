@@ -1,5 +1,6 @@
 from PyQt5 import Qt, QtCore, QtGui, QtWidgets, uic
 from PyQt5.QtCore import pyqtSignal, QObject
+import pickle
 from client_gui import Ui_Form
 from time import gmtime, strftime
 
@@ -53,11 +54,12 @@ class Window(QtWidgets.QWidget):
             self.ui.textEdit_chatView.append(message)
 
     def message_processing(self):
-        data = self.TCPSocket.get_message()
-        if data[0] == self.MARKER_CLIENTS:
-            for i in range(1, len(data), 2):
-                self.ui.comboBox_chatParticipants.addItem(data[i])
-                self.clients.append(data[i+1])
+        data = self.TCPSocket.flush()
+        processed_data = pickle.loads(data)
+        if processed_data[1] == self.MARKER_CLIENTS:
+            for id in processed_data[2]:
+                self.ui.comboBox_chatParticipants.addItem(processed_data[2][id])
+                self.clients.append(id)
             return
 
         marker = data[0]

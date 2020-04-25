@@ -1,5 +1,6 @@
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtCore import QObject, pyqtSignal
+import pickle
 
 from server_gui import Ui_Form
 
@@ -26,39 +27,40 @@ class Window(QtWidgets.QWidget):
         self.signal = Communicate()
         self.signal.new_message_serv.connect(self.new_message_serv)
 
-    def request_processing(self, marker, login, client_id, connection):
-        if marker == self.MARKER_CONNECT:
-            active_clients = ''
-            for id_value, login_value in self.client_info.items():
-                active_clients += f'~{login_value}~{id_value}'
-
-            connection.send(bytes(f'active_clients{active_clients}'.encode('utf-8')))
+    def request_processing(self, mode, login, client_id, connection):
+        if mode == self.MARKER_CONNECT:
+            clients = {1: 'active_clients', 2: self.client_info}
+            connection.send(pickle.dumps(clients))
 
             self.client_info[client_id] = login
 
     def new_message_serv(self):
-        data = self.TCPSocket_app.get_message()
+        data = self.TCPSocket_app.flush()
+        processed_data = pickle.loads(data)
         connection, address = self.TCPSocket_app.get_client_connection_info()
-        print(data)
-        marker, reciever, login, message_content = data[0], data[1], data[2], data[3:]
+
+        mode, reciever, login, message_content = processed_data[
+            1], processed_data[2], processed_data[3], processed_data[4]
+        print(processed_data)
 
         client_id, client_ip = str(address[1]), address[0]
-        self.request_processing(marker, login, client_id, connection)
-
+        self.request_processing(mode, login, client_id, connection)
+        '''
         message = '~'.join(message_content)
         message_converted = f'|{client_ip}:{PORT}|{message}'
         final_message = ''
         if reciever == self.MARKER_ALL:
-            self.message_list.append(f'{marker}~{client_id}~{reciever}~{login}~{message_converted}')
+            self.message_list.append(f'{mode}~{client_id}~{reciever}~{login}~{message_converted}')
 
         if marker == self.MARKER_COMMON:
-            final_message = f'{marker}~{client_id}~{reciever}~{login}~::{message_converted}'
+            final_message = f'{mode}~{client_id}~{reciever}~{login}~::{message_converted}'
 
         if marker == self.MARKER_CONNECT or marker == self.MARKER_DISCONNECT:
-            final_message = f'{marker}~{client_id}~{reciever}~{login}~::{message_converted}'
+            final_message = f'{mode}~{client_id}~{reciever}~{login}~::{message_converted}'
 
         self.ui.textEdit_server_log.append(f'{message} {address}')
         self.sending(final_message, reciever, connection)
+        '''
 
     def sending(self, message, reciever, connection):
         for client_value, address_value in self.clients.items():
@@ -71,6 +73,7 @@ class Window(QtWidgets.QWidget):
 
 #        if marker == self.MARKER_CONNECT:
     #        return f'{marker}~{client_id}~{reciever}~{login}~{message}'
+
 
     def set_tcp_socket(self, socket):
         self.TCPSocket_app = socket

@@ -2,7 +2,8 @@ import socket
 import threading
 import time
 from PyQt5 import QtCore, QtWidgets
-from time import gmtime, strftime
+from time import localtime, strftime
+import pickle
 
 
 class TCPTools(QtWidgets.QWidget):
@@ -17,12 +18,12 @@ class TCPTools(QtWidgets.QWidget):
         self.MARKER_CONNECT = 'connect'
         self.MARKER_DISCONNECT = 'disconnect'
 
-    def sending(self, marker, reciever, message):
-        time = strftime("%H:%M:%S %d-%m-%Y", gmtime())
-        message = f' |{time}| {message}'
+    def sending(self, mode, reciever, message):
+        time = strftime("%H:%M:%S %d-%m-%Y", localtime())
+        message = f'AT{time} : {message}'
+        final_message = {1: mode, 2: reciever, 3: self.login, 4: message}
         try:
-            self.socket.send(
-                bytes(f'{marker}~{reciever}~[{self.login}]~{message}', encoding='UTF-8'))
+            self.socket.send(pickle.dumps(final_message))
         except OSError:
             pass
 
@@ -31,9 +32,6 @@ class TCPTools(QtWidgets.QWidget):
         self.socket.connect((self.host, self.port))
         self.sending(self.MARKER_CONNECT, self.MARKER_ALL, 'connected')
         self.start_TCP_thread_recieve(None, None)
-
-    def get_message(self):
-        return self.message
 
     def set_login(self, value):
         self.login = value
@@ -61,19 +59,23 @@ class TCPTools(QtWidgets.QWidget):
     def set_server_flag(self):
         self.server_flag = True
 
-    def set_new_message(self, message):
+    def fill(self, message):
         self.message = message
+        print(message)
+
+    def flush(self):
+        return self.message
 
     def recieve(self, connection, address):
         while not self.stopped:
             try:
                 while not self.stopped:
                     if self.server_flag:
-                        data = connection.recv(1024).decode('utf-8').split('~')
+                        data = connection.recv(1024)
                         self.set_client_connection_info(connection, address)
                     else:
-                        data = self.socket.recv(1024).decode('utf-8').split('~')
-                    self.set_new_message(data)
+                        data = self.socket.recv(1024)
+                    self.fill(data)
                     self.message_signal.emit()
                     time.sleep(2)
             except:
