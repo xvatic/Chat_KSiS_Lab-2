@@ -53,9 +53,6 @@ class TCPTools(QtWidgets.QWidget):
     def get_client_connection_info(self):
         return self.connection, self.address
 
-    def set_reusable(self):
-        self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-
     def set_server_flag(self):
         self.server_flag = True
 

@@ -1,6 +1,7 @@
 import threading
 import socket
 import time
+import pickle
 
 
 class UDPTools():
@@ -16,23 +17,13 @@ class UDPTools():
     def address_request_flag(self):
         self.address_request = True
 
-    def bind(self, host, port):
-        self.socket.bind((host, port))
-
-    def set_broadcast(self):
-        self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-
-    def set_reusable(self):
-        self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-
-    def sending(self, message):
-        self.socket.sendto(f'{message}'.encode("utf-8"), ('<broadcast>', self.port))
-
     def send(self):
         while not self.stopped:
             try:
                 while not self.stopped:
-                    self.sending(f'{str(self.host)} {str(self.port)}')
+                    message = {1: str(self.host), 2: str(self.port)}
+                    final_message = pickle.dumps(message)
+                    self.socket.sendto(final_message, ('<broadcast>', self.port))
                     time.sleep(2)
             except:
                 pass
@@ -42,12 +33,15 @@ class UDPTools():
             try:
                 while not self.stopped:
                     data, address = self.socket.recvfrom(1024)
-                    message = data.decode("utf-8").split()
-                    self.recieved_ip = message[0]
-                    self.recieved_port = message[1]
+                    message = pickle.loads(data)
+                    self.recieved_ip = message[1]
+                    self.recieved_port = message[2]
+
                     if self.address_request:
+                        message = {1: str(self.host), 2: str(self.port)}
+                        final_message = pickle.dumps(message)
                         self.socket.sendto(
-                            (f'{self.host} {str(self.port)}').encode("utf-8"), address)
+                            final_message, address)
                     time.sleep(2)
             except OSError:
                 pass

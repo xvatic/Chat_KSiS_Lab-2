@@ -1,8 +1,9 @@
 from PyQt5 import Qt, QtCore, QtGui, QtWidgets, uic
 from PyQt5.QtCore import pyqtSignal, QObject
 import pickle
+import pyglet
 from client_gui import Ui_Form
-from time import gmtime, strftime
+from time import localtime, strftime
 
 
 class Communicate(QObject):
@@ -24,12 +25,13 @@ class Window(QtWidgets.QWidget):
         self.message_list = []
         self.clients = []
         self.reciever_address = self.MARKER_ALL
+        self.sound = pyglet.media.load('files/sms_uvedomlenie_na_iphone.wav')
 
     def search(self):
         ClIENT_HOST = socket.gethostbyname(socket.gethostname())
         ClIENT_PORT = 1234
         UDPSocket = UDPTools(ClIENT_HOST, ClIENT_PORT)
-        UDPSocket.set_broadcast()
+        UDPSocket.socket.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
         UDPSocket.start_UDP_thread_recieve()
         UDPSocket.start_UDP_thread_send()
         time.sleep(0.05)
@@ -41,11 +43,11 @@ class Window(QtWidgets.QWidget):
         self.TCPSocket.set_login(application.ui.textEdit_setName.toPlainText())
         self.TCPSocket.connect()
 
-    def renew_clients(self, marker, sender_id, login):
-        if marker == self.MARKER_CONNECT:
+    def renew_clients(self, mode, sender_id, login):
+        if mode == self.MARKER_CONNECT:
             self.clients.append(sender_id)
             self.ui.comboBox_chatParticipants.addItem(login)
-        elif marker == self.MARKER_DISCONNECT:
+        elif mode == self.MARKER_DISCONNECT:
             self.clients.pop(sender_id)
             self.ui.comboBox_chatParticipants.remove(login)
 
@@ -54,27 +56,27 @@ class Window(QtWidgets.QWidget):
             self.ui.textEdit_chatView.append(message)
 
     def message_processing(self):
+
         data = self.TCPSocket.flush()
-        processed_data = pickle.loads(data)
+        try:
+            processed_data = pickle.loads(data)
+        except EOFError:
+            pass
         if processed_data[1] == self.MARKER_CLIENTS:
             for id in processed_data[2]:
                 self.ui.comboBox_chatParticipants.addItem(processed_data[2][id])
                 self.clients.append(id)
             return
 
-        marker = data[0]
-        sender_id = data[1]
-        reciever = data[2]
-        login = data[3]
-        message = data[3] + '~'.join(data[4:])
+        mode = processed_data[1]
+        sender_id = processed_data[2]
+        reciever = processed_data[3]
+        login = processed_data[4]
+        message = processed_data[5]
 
         print(data)
-        if data[0] == self.MARKER_CLIENTS:
-            for i in range(1, len(data), 2):
-                self.ui.comboBox_chatParticipants.addItem(data[i])
-                self.clients.append(data[i+1])
 
-        self.renew_clients(marker, sender_id, login)
+        self.renew_clients(mode, sender_id, login)
         self.show_message(sender_id, reciever, message)
 
     def set_tcp_socket(self, socket):
@@ -86,7 +88,7 @@ class Window(QtWidgets.QWidget):
             self.sending(self.MARKER_COMMON, self.reciever_address, message, True)
 
     def sending(self, marker, reciever, message, append):
-        time = strftime("%H:%M:%S %d-%m-%Y", gmtime())
+        time = strftime("%H:%M:%S %d-%m-%Y", localtime())
         final_message = f'{time}{message}'
 
         self.message_list.append([reciever, final_message])
