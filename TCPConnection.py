@@ -14,9 +14,13 @@ class TCPTools(QtWidgets.QWidget):
         self.server_flag = False
         self.message_signal = signal
 
-        self.MARKER_ALL = 'all'
-        self.MARKER_CONNECT = 'connect'
-        self.MARKER_DISCONNECT = 'disconnect'
+        self.MODE_CLIENTS = '03'
+        self.MODE_CONNECT = '01'
+        self.MODE_DISCONNECT = '02'
+        self.MODE_COMMON = '00'
+        self.MODE_HISTORY = '04'
+
+        self.MARKER_ALL = '10'
 
     def sending(self, mode, reciever, message):
         time = strftime("%H:%M:%S %d-%m-%Y", localtime())
@@ -30,7 +34,7 @@ class TCPTools(QtWidgets.QWidget):
     def connect(self):
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.socket.connect((self.host, self.port))
-        self.sending(self.MARKER_CONNECT, self.MARKER_ALL, 'connected')
+        self.sending(self.MODE_CONNECT, self.MARKER_ALL, 'connected')
         self.start_TCP_thread_recieve(None, None)
 
     def set_login(self, value):
@@ -58,7 +62,6 @@ class TCPTools(QtWidgets.QWidget):
 
     def fill(self, message):
         self.message = message
-        print(message)
 
     def flush(self):
         return self.message
@@ -86,6 +89,6 @@ class TCPTools(QtWidgets.QWidget):
         Thread_recieve.start()
 
     def disconnect(self):
-        self.sending(self.MARKER_DISCONNECT, self.MARKER_GLOBAL, "left")
+        self.sending(self.MODE_DISCONNECT, self.MARKER_ALL, "left")
         self.stopped = True
         self.socket.close()

@@ -6,10 +6,6 @@ import pickle
 from server_gui import Ui_Form
 
 
-class Communicate(QObject):
-    new_message_serv = pyqtSignal()
-
-
 class Window(QtWidgets.QWidget):
     def __init__(self):
         super(Window, self).__init__()
@@ -18,58 +14,100 @@ class Window(QtWidgets.QWidget):
         self.clients = {}
         self.message_list = []
         self.client_info = {}
-        self.MARKER_ALL = 'all'
-        self.MARKER_CONNECT = 'connect'
-        self.MARKER_DISCONNECT = 'disconnect'
-        self.MARKER_COMMON = 'common'
-        self.MARKER_CLIENTS = 'clients'
-        self.MARKER_HISTORY = 'history'
+        self.MODE_CLIENTS = '03'
+        self.MODE_CONNECT = '01'
+        self.MODE_DISCONNECT = '02'
+        self.MODE_COMMON = '00'
+        self.MODE_HISTORY = '04'
 
-        self.signal = Communicate()
+        self.MARKER_ALL = '10'
+
+        self.signal = New_message_event_handle()
         self.signal.new_message_serv.connect(self.new_message_serv)
 
-    def store():
-        return
+    def str_to_tuple(self, message):
+        content = message.split('~')
+        mode, client_id, reciever, login, message = content[0], content[1], content[2], content[3], content[4]
+        history_element = {1: mode, 2: client_id, 3: reciever, 4: login, 5: message}
+        return history_element
+
+    def common_message(self, mode, client_id, reciever, login, message):
+        final_message = {1: mode, 2: client_id, 3: reciever, 4: login, 5: message}
+        return final_message
+
+    def store(self, mode, client_id, reciever, login, message):
+        if mode != self.MODE_HISTORY:
+            self.message_list.append(f'{mode}~{client_id}~{reciever}~{login}~{message}')
+
+    def serialize(self, message_tuple):
+        message_byte_form = pickle.dumps(message_tuple)
+        return message_byte_form
+
+    def deserialize(self, message_byte_form):
+        message_tuple = pickle.loads(message_byte_form)
+        return message_tuple
 
     def request_processing(self, mode, login, client_id, connection):
-        if mode == self.MARKER_CONNECT:
-            clients = {1: 'active_clients', 2: self.client_info}
-            connection.send(pickle.dumps(clients))
-
+        if mode == self.MODE_CONNECT:
+            clients = {1: '03', 2: self.client_info}
+            connection.send(self.serialize(clients))
             self.client_info[client_id] = login
+        if mode == self.MODE_DISCONNECT:
+            self.client_info.pop(self.clients[connection])
+            self.clients.pop(connection)
+
+        if mode == self.MODE_HISTORY:
+            i = 2
+            history = {1: '04'}
+            for m in self.message_list:
+                message = self.str_to_tuple(m)
+                history[i] = message
+                i += 1
+            history = self.serialize(history)
+            connection.send(history)
 
     def new_message_serv(self):
+        mode = ''
+        login = ''
+        client_id = ''
+        connection = ''
+        message_content = ''
+        reciever = ''
+        processed_data = {}
         data = self.TCPSocket_app.flush()
         try:
-            processed_data = pickle.loads(data)
+            processed_data = self.deserialize(data)
         except EOFError:
             pass
         connection, address = self.TCPSocket_app.get_client_connection_info()
 
-        mode, reciever, login, message_content = processed_data[
-            1], processed_data[2], processed_data[3], processed_data[4]
-        print(processed_data)
+        try:
+            mode, reciever, login, message_content = processed_data[
+                1], processed_data[2], processed_data[3], processed_data[4]
+        except KeyError:
+            pass
 
         client_id, client_ip = str(address[1]), address[0]
         self.request_processing(mode, login, client_id, connection)
 
     #    message = '~'.join(message_content)
-        message_converted = f'|{client_ip}|{message_content}'
+        message_converted = f'|{client_ip}|{login}|{message_content}'
         final_message = {}
         if reciever == self.MARKER_ALL:
-            self.message_list.append(f'{mode}~{client_id}~{reciever}~{login}~{message_converted}')
+            self.store(mode, client_id, reciever, login, message_converted)
 
-        if mode == self.MARKER_COMMON:
-            final_message = {1: mode, 2: client_id, 3: reciever, 4: login, 5: message_converted}
+        if mode == self.MODE_COMMON:
+            final_message = self.common_message(mode, client_id, reciever, login, message_converted)
 
-        if mode == self.MARKER_CONNECT or mode == self.MARKER_DISCONNECT:
-            final_message = {1: mode, 2: client_id, 3: reciever, 4: login, 5: message_converted}
+        if mode == self.MODE_CONNECT or mode == self.MODE_DISCONNECT:
+            final_message = self.common_message(mode, client_id, reciever, login, message_converted)
 
         self.ui.textEdit_server_log.append(f'{message_converted} {address}')
-        final_message = pickle.dumps(final_message)
+        final_message = self.serialize(final_message)
         self.sending(final_message, reciever, connection)
 
     def sending(self, message, reciever, connection):
+
         for client_value, address_value in self.clients.items():
             if connection != client_value:
                 if address_value == reciever:
@@ -88,6 +126,10 @@ class Window(QtWidgets.QWidget):
     def start(self):
         thread = threading.Thread(target=self.thread_option, daemon=True)
         thread.start()
+
+
+class New_message_event_handle(QObject):
+    new_message_serv = pyqtSignal()
 
 
 if __name__ == "__main__":
