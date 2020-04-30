@@ -178,8 +178,8 @@ if __name__ == "__main__":
     import socket
     import threading
     import time
-    from UDPInteraction import UDPTools
-    from TCPConnection import TCPTools
+    from Network import UDPTools
+    from Network import TCPTools
 
     app = QtWidgets.QApplication(sys.argv)
     application = Window()

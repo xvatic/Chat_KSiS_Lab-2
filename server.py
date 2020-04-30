@@ -139,8 +139,8 @@ if __name__ == "__main__":
     import threading
     import time
 
-    from UDPInteraction import UDPTools
-    from TCPConnection import TCPTools
+    from Network import UDPTools
+    from Network import TCPTools
     HOST = socket.gethostbyname(socket.gethostname())
     PORT = 1234
 
