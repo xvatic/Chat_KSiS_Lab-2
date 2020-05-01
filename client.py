@@ -32,10 +32,11 @@ class Window(QtWidgets.QWidget):
         UDPSocket.socket.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
         UDPSocket.start_UDP_thread_recieve()
         UDPSocket.start_UDP_thread_send()
-        time.sleep(0.05)
-        host, port = UDPSocket.transfer_value()
+        time.sleep(2)
+        host, port = UDPSocket.flush()
         needed_host = str(host)
         needed_port = int(port)
+        print(needed_host, needed_port)
         UDPSocket.stopped_connection()
         self.TCPSocket.set_host_and_port(needed_host, needed_port)
         self.TCPSocket.set_login(application.ui.textEdit_setName.toPlainText())
@@ -178,8 +179,8 @@ if __name__ == "__main__":
     import socket
     import threading
     import time
-    from Network import UDPTools
-    from Network import TCPTools
+
+    from Network import TCPTools, UDPTools
 
     app = QtWidgets.QApplication(sys.argv)
     application = Window()

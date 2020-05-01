@@ -30,7 +30,7 @@ class TCPTools(QtWidgets.QWidget):
 
     def sending(self, mode, reciever, message):
         time = strftime("%H:%M:%S %d-%m-%Y", localtime())
-        message = f'AT{time} : {message}'
+        message = f' AT {time} : {message}'
         final_message = {1: mode, 2: reciever, 3: self.login, 4: message}
         try:
             self.socket.send(pickle.dumps(final_message))
@@ -107,6 +107,13 @@ class UDPTools():
     def address_request_flag(self):
         self.address_request = True
 
+    def fill(self, host, port):
+        self.recieved_ip = host
+        self.recieved_port = port
+
+    def flush(self):
+        return self.recieved_ip, self.recieved_port
+
     def send(self):
         while not self.stopped:
             try:
@@ -124,9 +131,7 @@ class UDPTools():
                 while not self.stopped:
                     data, address = self.socket.recvfrom(1024)
                     message = pickle.loads(data)
-                    self.recieved_ip = message[1]
-                    self.recieved_port = message[2]
-
+                    self.fill(message[1], message[2])
                     if self.address_request:
                         message = {1: str(self.host), 2: str(self.port)}
                         final_message = pickle.dumps(message)
@@ -145,9 +150,6 @@ class UDPTools():
         self.stopped = False
         Thread_recieve = threading.Thread(target=self.recieve, daemon=True)
         Thread_recieve.start()
-
-    def transfer_value(self):
-        return self.recieved_ip, self.recieved_port
 
     def stopped_connection(self):
         self.stopped = True

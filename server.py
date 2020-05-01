@@ -12,7 +12,7 @@ class Window(QtWidgets.QWidget):
         self.ui = Ui_Form()
         self.ui.setupUi(self)
         self.clients = {}
-        self.message_list = []
+        self.history_list = []
         self.client_info = {}
         self.MODE_CLIENTS = '03'
         self.MODE_CONNECT = '01'
@@ -25,7 +25,7 @@ class Window(QtWidgets.QWidget):
         self.signal = New_message_event_handle()
         self.signal.new_message_serv.connect(self.new_message_serv)
 
-    def str_to_tuple(self, message):
+    def string_to_dictionary(self, message):
         content = message.split('~')
         mode, client_id, reciever, login, message = content[0], content[1], content[2], content[3], content[4]
         history_element = {1: mode, 2: client_id, 3: reciever, 4: login, 5: message}
@@ -37,15 +37,15 @@ class Window(QtWidgets.QWidget):
 
     def store(self, mode, client_id, reciever, login, message):
         if mode != self.MODE_HISTORY:
-            self.message_list.append(f'{mode}~{client_id}~{reciever}~{login}~{message}')
+            self.history_list.append(f'{mode}~{client_id}~{reciever}~{login}~{message}')
 
-    def serialize(self, message_tuple):
-        message_byte_form = pickle.dumps(message_tuple)
+    def serialize(self, message_dictionary):
+        message_byte_form = pickle.dumps(message_dictionary)
         return message_byte_form
 
     def deserialize(self, message_byte_form):
-        message_tuple = pickle.loads(message_byte_form)
-        return message_tuple
+        message_dictionary = pickle.loads(message_byte_form)
+        return message_dictionary
 
     def request_processing(self, mode, login, client_id, connection):
         if mode == self.MODE_CONNECT:
@@ -59,8 +59,8 @@ class Window(QtWidgets.QWidget):
         if mode == self.MODE_HISTORY:
             i = 2
             history = {1: '04'}
-            for m in self.message_list:
-                message = self.str_to_tuple(m)
+            for m in self.history_list:
+                message = self.string_to_dictionary(m)
                 history[i] = message
                 i += 1
             history = self.serialize(history)
@@ -90,8 +90,7 @@ class Window(QtWidgets.QWidget):
         client_id, client_ip = str(address[1]), address[0]
         self.request_processing(mode, login, client_id, connection)
 
-    #    message = '~'.join(message_content)
-        message_converted = f'|{client_ip}|{login}|{message_content}'
+        message_converted = f'|{client_ip} {client_id}|{login}|{message_content}'
         final_message = {}
         if reciever == self.MARKER_ALL:
             self.store(mode, client_id, reciever, login, message_converted)
@@ -139,8 +138,7 @@ if __name__ == "__main__":
     import threading
     import time
 
-    from Network import UDPTools
-    from Network import TCPTools
+    from Network import TCPTools, UDPTools
     HOST = socket.gethostbyname(socket.gethostname())
     PORT = 1234
 
