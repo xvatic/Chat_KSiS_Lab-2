@@ -27,7 +27,7 @@ class Window(QtWidgets.QWidget):
 
     def search(self):
         ClIENT_HOST = socket.gethostbyname(socket.gethostname())
-        ClIENT_PORT = 1234
+        ClIENT_PORT = 12345
         UDPSocket = UDPTools(ClIENT_HOST, ClIENT_PORT)
         UDPSocket.socket.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
         UDPSocket.start_UDP_thread_recieve()
@@ -36,7 +36,6 @@ class Window(QtWidgets.QWidget):
         host, port = UDPSocket.flush()
         needed_host = str(host)
         needed_port = int(port)
-        print(needed_host, needed_port)
         UDPSocket.stopped_connection()
         self.TCPSocket.set_host_and_port(needed_host, needed_port)
         self.TCPSocket.set_login(application.ui.textEdit_setName.toPlainText())

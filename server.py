@@ -59,6 +59,7 @@ class Window(QtWidgets.QWidget):
         if mode == self.MODE_HISTORY:
             i = 2
             history = {1: '04'}
+            print(self.history_list)
             for m in self.history_list:
                 message = self.string_to_dictionary(m)
                 history[i] = message
@@ -140,7 +141,7 @@ if __name__ == "__main__":
 
     from Network import TCPTools, UDPTools
     HOST = socket.gethostbyname(socket.gethostname())
-    PORT = 1234
+    PORT = 12345
 
     app = QtWidgets.QApplication(sys.argv)
     application = Window()
