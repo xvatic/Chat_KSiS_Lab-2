@@ -53,6 +53,7 @@ class Window(QtWidgets.QWidget):
         self.TCPSocket.disconnect()
         self.message_list.clear()
         self.ui.comboBox_chatParticipants.clear()
+        self.ui.textEdit_chatView.clear()
 
     def switch_to_private(self):
 
@@ -100,20 +101,20 @@ class Window(QtWidgets.QWidget):
                 message = history[i][5]
                 self.message_list.append(f'{mode}~{sender_id}~{reciever}~{login}~{message}')
 
-    def serialize(self, message_tuple):
-        message_byte_form = pickle.dumps(message_tuple)
+    def serialize(self, message_dictionary):
+        message_byte_form = pickle.dumps(message_dictionary)
         return message_byte_form
 
     def deserialize(self, message_byte_form):
-        message_tuple = pickle.loads(message_byte_form)
-        return message_tuple
+        message_dictionary = pickle.loads(message_byte_form)
+        return message_dictionary
 
     def show_message(self, sender_id, reciever, message):
         if sender_id == self.reciever_address or (reciever == self.MARKER_ALL and self.reciever_address == self.MARKER_ALL) or (sender_id == 'me' and reciever == self.reciever_address):
             self.ui.textEdit_chatView.append(message)
 
     def message_processing(self):
-
+        processed_data = {}
         data = self.TCPSocket.flush()
         try:
             processed_data = self.deserialize(data)

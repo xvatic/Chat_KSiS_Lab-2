@@ -59,7 +59,6 @@ class Window(QtWidgets.QWidget):
         if mode == self.MODE_HISTORY:
             i = 2
             history = {1: '04'}
-            print(self.history_list)
             for m in self.history_list:
                 message = self.string_to_dictionary(m)
                 history[i] = message
