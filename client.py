@@ -180,7 +180,7 @@ if __name__ == "__main__":
     import threading
     import time
 
-    from Network import TCPTools, UDPTools
+    from network import TCPTools, UDPTools
 
     app = QtWidgets.QApplication(sys.argv)
     application = Window()

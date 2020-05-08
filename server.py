@@ -89,9 +89,9 @@ class Window(QtWidgets.QWidget):
 
         client_id, client_ip = str(address[1]), address[0]
         self.request_processing(mode, login, client_id, connection)
-
         message_converted = f'|{client_ip} {client_id}|{login}|{message_content}'
         final_message = {}
+
         if reciever == self.MARKER_ALL:
             self.store(mode, client_id, reciever, login, message_converted)
 
@@ -106,7 +106,6 @@ class Window(QtWidgets.QWidget):
         self.sending(final_message, reciever, connection)
 
     def sending(self, message, reciever, connection):
-
         for client_value, address_value in self.clients.items():
             if connection != client_value:
                 if address_value == reciever:
@@ -138,7 +137,7 @@ if __name__ == "__main__":
     import threading
     import time
 
-    from Network import TCPTools, UDPTools
+    from network import TCPTools, UDPTools
     HOST = socket.gethostbyname(socket.gethostname())
     PORT = 12345
 

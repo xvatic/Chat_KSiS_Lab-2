@@ -73,6 +73,8 @@ class TCPTools(QtWidgets.QWidget):
                     if self.server_flag:
                         data = connection.recv(1024)
                         self.set_client_connection_info(connection, address)
+                        if data == b'':
+                            self.stopped = True
                     else:
                         data = self.socket.recv(1024)
                     self.fill(data)
