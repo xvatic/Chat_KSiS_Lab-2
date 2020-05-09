@@ -28,12 +28,20 @@ class TCPTools(QtWidgets.QWidget):
     def flush(self):
         return self.message
 
+    def serialize(self, message_dictionary):
+        message_byte_form = pickle.dumps(message_dictionary)
+        return message_byte_form
+
+    def deserialize(self, message_byte_form):
+        message_dictionary = pickle.loads(message_byte_form)
+        return message_dictionary
+
     def sending(self, mode, reciever, message):
         time = strftime("%H:%M:%S %d-%m-%Y", localtime())
         message = f' AT {time} : {message}'
         final_message = {1: mode, 2: reciever, 3: self.login, 4: message}
         try:
-            self.socket.send(pickle.dumps(final_message))
+            self.socket.send(self.serialize(final_message))
         except OSError:
             pass
 
@@ -71,12 +79,12 @@ class TCPTools(QtWidgets.QWidget):
             try:
                 while not self.stopped:
                     if self.server_flag:
-                        data = connection.recv(1024)
+                        data = connection.recv(4096)
                         self.set_client_connection_info(connection, address)
                         if data == b'':
                             self.stopped = True
                     else:
-                        data = self.socket.recv(1024)
+                        data = self.socket.recv(4096)
                     self.fill(data)
                     self.message_signal.emit()
                     time.sleep(2)
@@ -109,6 +117,14 @@ class UDPTools():
     def address_request_flag(self):
         self.address_request = True
 
+    def serialize(self, message_dictionary):
+        message_byte_form = pickle.dumps(message_dictionary)
+        return message_byte_form
+
+    def deserialize(self, message_byte_form):
+        message_dictionary = pickle.loads(message_byte_form)
+        return message_dictionary
+
     def fill(self, host, port):
         self.recieved_ip = host
         self.recieved_port = port
@@ -121,7 +137,7 @@ class UDPTools():
             try:
                 while not self.stopped:
                     message = {1: str(self.host), 2: str(self.port)}
-                    final_message = pickle.dumps(message)
+                    final_message = self.serialize(message)
                     self.socket.sendto(final_message, ('<broadcast>', self.port))
                     time.sleep(2)
             except:
@@ -132,14 +148,14 @@ class UDPTools():
             try:
                 while not self.stopped:
                     data, address = self.socket.recvfrom(1024)
-                    message = pickle.loads(data)
+                    message = self.deserialize(data)
                     self.fill(message[1], message[2])
                     if self.address_request:
                         message = {1: str(self.host), 2: str(self.port)}
-                        final_message = pickle.dumps(message)
+                        final_message = self.serialize(message)
                         self.socket.sendto(
                             final_message, address)
-                    time.sleep(2)
+                    time.sleep(0.5)
             except OSError:
                 pass
 

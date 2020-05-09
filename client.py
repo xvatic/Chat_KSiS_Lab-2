@@ -32,7 +32,7 @@ class Window(QtWidgets.QWidget):
         UDPSocket.socket.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
         UDPSocket.start_UDP_thread_recieve()
         UDPSocket.start_UDP_thread_send()
-        time.sleep(2)
+        time.sleep(0.5)
         host, port = UDPSocket.flush()
         needed_host = str(host)
         needed_port = int(port)

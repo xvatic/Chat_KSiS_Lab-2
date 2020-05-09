@@ -91,7 +91,6 @@ class Window(QtWidgets.QWidget):
         self.request_processing(mode, login, client_id, connection)
         message_converted = f'|{client_ip} {client_id}|{login}|{message_content}'
         final_message = {}
-
         if reciever == self.MARKER_ALL:
             self.store(mode, client_id, reciever, login, message_converted)
 
@@ -103,7 +102,8 @@ class Window(QtWidgets.QWidget):
 
         self.ui.textEdit_server_log.append(f'{message_converted} {address}')
         final_message = self.serialize(final_message)
-        self.sending(final_message, reciever, connection)
+        if mode != self.MODE_HISTORY:
+            self.sending(final_message, reciever, connection)
 
     def sending(self, message, reciever, connection):
         for client_value, address_value in self.clients.items():
