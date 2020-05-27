@@ -81,14 +81,9 @@ class Window(QtWidgets.QWidget):
             pass
         connection, address = self.TCPSocket_app.get_client_connection_info()
 
-        try:
-            mode, reciever, login, message_content = processed_data[
-                1], processed_data[2], processed_data[3], processed_data[4]
-        except KeyError:
-            pass
-
         client_id, client_ip = str(address[1]), address[0]
         self.request_processing(mode, login, client_id, connection)
+
         message_converted = f'|{client_ip} {client_id}|{login}|{message_content}'
         final_message = {}
         if reciever == self.MARKER_ALL:
