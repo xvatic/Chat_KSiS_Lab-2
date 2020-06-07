@@ -80,6 +80,11 @@ class Window(QtWidgets.QWidget):
         except EOFError:
             pass
         connection, address = self.TCPSocket_app.get_client_connection_info()
+        try:
+            mode, reciever, login, message_content = processed_data[
+                1], processed_data[2], processed_data[3], processed_data[4]
+        except KeyError:
+            pass
 
         client_id, client_ip = str(address[1]), address[0]
         self.request_processing(mode, login, client_id, connection)
@@ -133,7 +138,7 @@ if __name__ == "__main__":
     import time
 
     from network import TCPTools, UDPTools
-    HOST = socket.gethostbyname(socket.gethostname())
+    HOST = socket.gethostbyname('localhost')
     PORT = 12345
 
     app = QtWidgets.QApplication(sys.argv)

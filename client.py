@@ -26,7 +26,7 @@ class Window(QtWidgets.QWidget):
         self.sound = pyglet.media.load('files/sms_uvedomlenie_na_iphone.wav', streaming=False)
 
     def search(self):
-        ClIENT_HOST = socket.gethostbyname(socket.gethostname())
+        ClIENT_HOST = socket.gethostbyname('localhost')
         ClIENT_PORT = 12345
         UDPSocket = UDPTools(ClIENT_HOST, ClIENT_PORT)
         UDPSocket.socket.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
@@ -38,7 +38,7 @@ class Window(QtWidgets.QWidget):
         needed_port = int(port)
         UDPSocket.stopped_connection()
         self.TCPSocket.set_host_and_port(needed_host, needed_port)
-        self.TCPSocket.set_login(application.ui.textEdit_setName.toPlainText())
+        self.TCPSocket.set_login(application.ui.lineEdit_setName.text())
         self.TCPSocket.connect()
         self.history()
 
@@ -56,7 +56,6 @@ class Window(QtWidgets.QWidget):
         self.ui.textEdit_chatView.clear()
 
     def switch_to_private(self):
-
         for address in self.clients:
             if self.clients[address] == str(self.ui.comboBox_chatParticipants.currentText()):
                 self.reciever_address = address
@@ -120,7 +119,6 @@ class Window(QtWidgets.QWidget):
             processed_data = self.deserialize(data)
         except EOFError:
             pass
-
         if processed_data:
             if processed_data == {}:
                 return

@@ -46,9 +46,9 @@ class Ui_Form(object):
         self.pushbutton_Disconnect = QtWidgets.QPushButton(Form)
         self.pushbutton_Disconnect.setGeometry(QtCore.QRect(420, 290, 113, 32))
         self.pushbutton_Disconnect.setObjectName("pushbutton_Disconnect")
-        self.textEdit_setName = QtWidgets.QTextEdit(Form)
-        self.textEdit_setName.setGeometry(QtCore.QRect(420, 160, 101, 21))
-        self.textEdit_setName.setObjectName("textEdit_setName")
+        self.lineEdit_setName = QtWidgets.QLineEdit(Form)
+        self.lineEdit_setName.setGeometry(QtCore.QRect(420, 160, 101, 21))
+        self.lineEdit_setName.setObjectName("textEdit_setName")
 
         self.retranslateUi(Form)
         QtCore.QMetaObject.connectSlotsByName(Form)
