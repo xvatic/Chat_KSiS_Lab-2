@@ -76,16 +76,121 @@ class StorageHandler:
         return self.unique_file_id
 
 
-class HTTPHandler(BaseHTTPRequestHandler):
-    global handler
-    handler = StorageHandler()
+class HttpRequestHandler(BaseHTTPRequestHandler):
+    global storage
+    storage = StorageHandler()
+
+    def perform_INIT(self):
+        client_id = storage.get_value_from_header(self.headers, http_settings.CLIENT_ID)
+        if client_id == http_settings.NONE:
+            unique_client_id = storage.get_unique_client_id()
+            storage.client_upload_length[unique_client_id] = 0
+            self.send_response(200)
+            self.send_header(http_settings.CLIENT_ID, str(unique_client_id))
+            self.end_headers()
+
+        else:
+            self.send_response(403)
+            self.send_header(http_settings.ERROR,  'client exists')
+            self.end_headers()
+
+    def perform_GET(self):
+        file_id = int(storage.get_value_from_header(self.headers, http_settings.CONTENT_ID))
+        try:
+            full_file_name = storage.file_id_and_name[file_id]
+            self.send_response(200)
+            self.end_headers()
+
+            file = open(f'{http_settings.SERVICE_FILE_PATH}{full_file_name}', 'rb').read()
+            self.wfile.write(file)
+
+        except:
+            self.send_response(404)
+            self.send_header(http_settings.ERROR,  http_settings.NO_FILE)
+            self.end_headers()
+
+    def perform_TEST(self):
+        file_name = str(storage.get_value_from_header(self.headers, http_settings.CONTENT_NAME))
+        file_ext = storage.get_value_from_header(self.headers, http_settings.CONTENT_EXT)
+        file_length = int(storage.get_value_from_header(self.headers, http_settings.CONTENT_LEN))
+        client_id = int(storage.get_value_from_header(self.headers, http_settings.CLIENT_ID))
+
+        err = storage.check_file(file_name, file_ext, file_length, client_id)
+        if not err:
+            self.send_response(200)
+            self.end_headers()
+        else:
+            self.send_response(411)
+            self.send_header(http_settings.ERROR, err)
+            self.end_headers()
+
+    def perfom_PUT(self):
+        file_name = str(storage.get_value_from_header(self.headers, http_settings.CONTENT_NAME))
+        file_ext = storage.get_value_from_header(self.headers, http_settings.CONTENT_EXT)
+        file_length = int(storage.get_value_from_header(self.headers, http_settings.CONTENT_LEN))
+        client_id = int(storage.get_value_from_header(self.headers, http_settings.CLIENT_ID))
+
+        err = storage.check_file(file_name, file_ext, file_length, client_id)
+
+        if not err:
+            file = self.rfile.read(file_length)
+            file_id = storage.save_file(file, file_name, file_ext, file_length, client_id)
+            self.send_response(200)
+            self.send_header(http_settings.CONTENT_ID, file_id)
+            self.end_headers()
+            return
+
+        self.send_response(411)
+        self.send_header(http_settings.ERROR, err)
+        self.end_headers()
+
+    def perfom_HEAD(self):
+        file_id = int(storage.get_value_from_header(self.headers, http_settings.CONTENT_ID))
+        try:
+
+            full_file_name = storage.file_id_and_name[file_id]
+            file_size = os.path.getsize(f'{http_settings.SERVICE_FILE_PATH}{full_file_name}')
+
+            self.send_response(200)
+            self.send_header(http_settings.CONTENT_SIZE, file_size)
+            self.end_headers()
+
+        except:
+            self.send_response(404)
+            self.send_header(http_settings.ERROR,  http_settings.NO_FILE)
+            self.end_headers()
+
+    def perfom_DELETE(self):
+        file_id = int(storage.get_value_from_header(self.headers, http_settings.CONTENT_ID))
+        client_id = int(storage.get_value_from_header(self.headers, http_settings.CLIENT_ID))
+        type = storage.get_value_from_header(self.headers, http_settings.REMOVABLE_TYPE)
+
+        if storage.delete_file(file_id, client_id, type):
+            self.send_response(200)
+            self.end_headers()
+
+        else:
+            self.send_response(404)
+            self.send_header(http_settings.ERROR, http_settings.NO_FILE)
+            self.end_headers()
+
+    def perfom_CLEAR(self):
+        client_id = int(storage.get_value_from_header(self.headers, http_settings.CLIENT_ID))
+        storage.client_upload_length[client_id] = 0
+        self.send_response(200)
+        self.end_headers()
 
 
-class HTTPServer:
+class HttpServer:
     def __init__(self, address, port):
         self.address = address
         self.port = port
 
     def launch_server(self):
-        self.server = HTTPServer((self.address, self.port), HTTPHandler)
-        self.server.server_forever()
+        self.server = HTTPServer((self.address, self.port), HttpRequestHandler)
+        self.server.serve_forever()
+
+
+if __name__ == '__main__':
+    serv = HttpServer('', 8080)
+    serv.launch_server()
