@@ -11,6 +11,7 @@ class HttpClient():
 
     def connect_to_server(self, address, port):
         self.connection = http.client.HTTPConnection(address, port)
+        print(self.connection)
 
     def get_unique_file_id(self):
         self.unique_file_id += 1

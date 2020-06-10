@@ -4,7 +4,7 @@ import time
 from PyQt5 import QtCore, QtWidgets
 from time import localtime, strftime
 import pickle
-import http.client
+
 import os
 from http.server import BaseHTTPRequestHandler, HTTPServer
 import http_settings
@@ -21,7 +21,7 @@ class StorageHandler:
         self.client_upload_length = {}
         self.file_id_and_name = {}
 
-    def get_value_from_header(self, header, needed):
+    def get_value_from_header(self, headers, needed):
         for header in str(headers).split('\n'):
             if header.startswith(needed):
                 return header[len(needed)+2:]
@@ -83,6 +83,7 @@ class HttpRequestHandler(BaseHTTPRequestHandler):
     def do_INIT(self):
         client_id = storage.get_value_from_header(self.headers, http_settings.CLIENT_ID)
         if client_id == http_settings.NONE:
+            print('trying to register')
             unique_client_id = storage.get_unique_client_id()
             storage.client_upload_length[unique_client_id] = 0
             self.send_response(200)
@@ -188,6 +189,7 @@ class HttpServer:
 
     def launch_server(self):
         self.server = HTTPServer((self.address, self.port), HttpRequestHandler)
+        print('Server is running...')
         self.server.serve_forever()
 
 

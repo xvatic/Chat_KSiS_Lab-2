@@ -1,5 +1,6 @@
 from PyQt5 import Qt, QtCore, QtGui, QtWidgets, uic
 from PyQt5.QtCore import pyqtSignal, QObject
+from PyQt5.QtWidgets import QMessageBox
 import pickle
 import pyglet
 from client_gui import Ui_Form
@@ -21,6 +22,7 @@ class Window(QtWidgets.QWidget):
 
         self.MARKER_ALL = '10'
         self.message_list = []
+        self.content_info = []
         self.clients = {}
         self.reciever_address = self.MARKER_ALL
         self.sound = pyglet.media.load('files/sms_uvedomlenie_na_iphone.wav', streaming=False)
@@ -112,6 +114,12 @@ class Window(QtWidgets.QWidget):
         if sender_id == self.reciever_address or (reciever == self.MARKER_ALL and self.reciever_address == self.MARKER_ALL) or (sender_id == 'me' and reciever == self.reciever_address):
             self.ui.textEdit_chatView.append(message)
 
+    def show_content_info(self):
+        self.show_notification(self.content_info[0])
+
+    def show_notification(self, info):
+        message_box = QMessageBox.information(self, 'title', info)
+
     def message_processing(self):
         processed_data = {}
         data = self.TCPSocket.flush()
@@ -149,8 +157,21 @@ class Window(QtWidgets.QWidget):
             self.show_message(sender_id, reciever, message)
             self.message_list.append(f'{mode}~{sender_id}~{reciever}~{login}~{message}')
 
+    def check_errors_in_response(self, response):
+        if response[0] != 200 and response[1] != 'OK':
+            self.content_info = [f'ERROR {response[0]} {response[1]} {response[2]}']
+            self.signal.show_content_info.emit()
+            return False
+        return True
+
     def set_tcp_socket(self, socket):
         self.TCPSocket = socket
+
+    def set_http_client(self, client):
+        self.HTTP_client = client
+        self.HTTP_client.connect_to_server('', 8080)
+        response = self.HTTP_client.initialization()
+        self.check_errors_in_response(response)
 
     def convert(self):
         message = self.ui.textEdit_messageInput.toPlainText()
@@ -170,6 +191,7 @@ class Window(QtWidgets.QWidget):
 
 class New_message_event_handle(QObject):
     message_processing = pyqtSignal()
+    show_content_info = pyqtSignal()
 
 
 if __name__ == "__main__":
@@ -179,12 +201,16 @@ if __name__ == "__main__":
     import time
 
     from network import TCPTools, UDPTools
+    import http_client_option
 
     app = QtWidgets.QApplication(sys.argv)
     application = Window()
     application.show()
     TCPSocket = TCPTools(application.signal.message_processing)
     application.set_tcp_socket(TCPSocket)
+
+    HTTPClient = http_client_option.HttpClient()
+    application.set_http_client(HTTPClient)
 
     application.ui.pushbutton_Connect.clicked.connect(application.search)
     application.ui.pushButton_sendMessage.clicked.connect(application.convert)
