@@ -80,7 +80,7 @@ class HttpRequestHandler(BaseHTTPRequestHandler):
     global storage
     storage = StorageHandler()
 
-    def perform_INIT(self):
+    def do_INIT(self):
         client_id = storage.get_value_from_header(self.headers, http_settings.CLIENT_ID)
         if client_id == http_settings.NONE:
             unique_client_id = storage.get_unique_client_id()
@@ -94,7 +94,7 @@ class HttpRequestHandler(BaseHTTPRequestHandler):
             self.send_header(http_settings.ERROR,  'client exists')
             self.end_headers()
 
-    def perform_GET(self):
+    def do_GET(self):
         file_id = int(storage.get_value_from_header(self.headers, http_settings.CONTENT_ID))
         try:
             full_file_name = storage.file_id_and_name[file_id]
@@ -109,7 +109,7 @@ class HttpRequestHandler(BaseHTTPRequestHandler):
             self.send_header(http_settings.ERROR,  http_settings.NO_FILE)
             self.end_headers()
 
-    def perform_TEST(self):
+    def do_TEST(self):
         file_name = str(storage.get_value_from_header(self.headers, http_settings.CONTENT_NAME))
         file_ext = storage.get_value_from_header(self.headers, http_settings.CONTENT_EXT)
         file_length = int(storage.get_value_from_header(self.headers, http_settings.CONTENT_LEN))
@@ -124,7 +124,7 @@ class HttpRequestHandler(BaseHTTPRequestHandler):
             self.send_header(http_settings.ERROR, err)
             self.end_headers()
 
-    def perfom_PUT(self):
+    def do_PUT(self):
         file_name = str(storage.get_value_from_header(self.headers, http_settings.CONTENT_NAME))
         file_ext = storage.get_value_from_header(self.headers, http_settings.CONTENT_EXT)
         file_length = int(storage.get_value_from_header(self.headers, http_settings.CONTENT_LEN))
@@ -144,7 +144,7 @@ class HttpRequestHandler(BaseHTTPRequestHandler):
         self.send_header(http_settings.ERROR, err)
         self.end_headers()
 
-    def perfom_HEAD(self):
+    def do_HEAD(self):
         file_id = int(storage.get_value_from_header(self.headers, http_settings.CONTENT_ID))
         try:
 
@@ -160,7 +160,7 @@ class HttpRequestHandler(BaseHTTPRequestHandler):
             self.send_header(http_settings.ERROR,  http_settings.NO_FILE)
             self.end_headers()
 
-    def perfom_DELETE(self):
+    def do_DELETE(self):
         file_id = int(storage.get_value_from_header(self.headers, http_settings.CONTENT_ID))
         client_id = int(storage.get_value_from_header(self.headers, http_settings.CLIENT_ID))
         type = storage.get_value_from_header(self.headers, http_settings.REMOVABLE_TYPE)
@@ -174,7 +174,7 @@ class HttpRequestHandler(BaseHTTPRequestHandler):
             self.send_header(http_settings.ERROR, http_settings.NO_FILE)
             self.end_headers()
 
-    def perfom_CLEAR(self):
+    def do_CLEAR(self):
         client_id = int(storage.get_value_from_header(self.headers, http_settings.CLIENT_ID))
         storage.client_upload_length[client_id] = 0
         self.send_response(200)
