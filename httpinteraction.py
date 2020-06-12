@@ -25,17 +25,16 @@ class StorageHandler:
         for header in str(headers).split('\n'):
             if header.startswith(needed):
                 return header[len(needed)+2:]
-            return False
+        return False
 
     def save_file(self, file, file_name, file_ext, file_length, client_id):
         save_str = f'{file_name}{file_ext}'
         file_id = self.get_unique_file_id()
         self.file_id_and_name[file_id] = save_str
-        sef.loaded_file_names.append(file_name)
+        self.loaded_file_names.append(file_name)
         saved_file = open(f'{http_settings.SERVICE_FILE_PATH}{save_str}', 'wb')
         saved_file.write(file)
         self.client_upload_length[client_id] += file_length
-
         return file_id
 
     def delete_file(self, file_id, client_id, type):
@@ -54,6 +53,7 @@ class StorageHandler:
             return False
 
     def check_file(self, file_name, file_ext, file_length, client_id):
+
         err = 'size reached'
         if file_length <= self.max_file_size:
             err = 'unacceptable_ext'
@@ -83,7 +83,6 @@ class HttpRequestHandler(BaseHTTPRequestHandler):
     def do_INIT(self):
         client_id = storage.get_value_from_header(self.headers, http_settings.CLIENT_ID)
         if client_id == http_settings.NONE:
-            print('trying to register')
             unique_client_id = storage.get_unique_client_id()
             storage.client_upload_length[unique_client_id] = 0
             self.send_response(200)

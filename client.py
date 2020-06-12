@@ -1,10 +1,12 @@
 from PyQt5 import Qt, QtCore, QtGui, QtWidgets, uic
 from PyQt5.QtCore import pyqtSignal, QObject
-from PyQt5.QtWidgets import QMessageBox
+from PyQt5.QtWidgets import QMessageBox, QFileDialog
 import pickle
 import pyglet
+import http_settings
 from client_gui import Ui_Form
 from time import localtime, strftime
+from os import path
 
 
 class Window(QtWidgets.QWidget):
@@ -14,6 +16,9 @@ class Window(QtWidgets.QWidget):
         self.ui.setupUi(self)
         self.signal = New_message_event_handle()
         self.signal.message_processing.connect(self.message_processing)
+        self.signal.set_button.connect(self.set_button)
+        self.signal.show_content_info.connect(self.show_content_info)
+        self.signal.new_content.connect(self.new_content_signal)
         self.MODE_CLIENTS = '03'
         self.MODE_CONNECT = '01'
         self.MODE_DISCONNECT = '02'
@@ -24,8 +29,36 @@ class Window(QtWidgets.QWidget):
         self.message_list = []
         self.content_info = []
         self.clients = {}
+        self.upload_files_button_info = {}
+        self.download_files_button_info = {}
+        self.upload_file_list = []
+        self.download_file_list = []
+        self.content_info = []
+        self.sender_info = ''
         self.reciever_address = self.MARKER_ALL
         self.sound = pyglet.media.load('files/sms_uvedomlenie_na_iphone.wav', streaming=False)
+        self.dialog_layout = self.set_layout_with_scroll_area(
+            self.ui.verticalLayout, self.ui.scrollArea)
+        self.upload_file_layout = self.set_layout_with_scroll_area(
+            self.ui.horizontalLayout, self.ui.scrollArea_2)
+        self.download_file_layout = self.set_layout_with_scroll_area(
+            self.ui.verticalLayout_2, self.ui.scrollArea_3)
+
+    def set_layout_with_scroll_area(self, ui_layout, ui_scroll_area):
+        layout = ui_layout
+        Widget = Qt.QWidget()
+        Widget.setLayout(layout)
+        scroll_area = ui_scroll_area
+        scroll_area.setWidget(Widget)
+        return layout
+
+    def add_button_into_layout(self, name, layout, button_dict, info, action, set_style=False):
+        button = Qt.QPushButton(f'{name}')
+        if set_style:
+            button.setStyleSheet(f'background: #F0F0F0')
+        layout.addWidget(button)
+        button_dict[button] = info
+        button.clicked.connect(action)
 
     def search(self):
         ClIENT_HOST = socket.gethostbyname('localhost')
@@ -43,6 +76,37 @@ class Window(QtWidgets.QWidget):
         self.TCPSocket.set_login(application.ui.lineEdit_setName.text())
         self.TCPSocket.connect()
         self.history()
+
+    def new_content_signal(self):
+        self.add_button_into_layout(
+            self.content_info[0], self.content_info[1], self.content_info[2], self.content_info[3], self.content_info[4])
+
+    def get_basename(self, file_path):
+        return path.basename(file_path)
+
+    def upload_file_thread(self, name, file_path):
+        if file_path:
+            file_basename = self.get_basename(file_path)
+            response = self.HTTP_client.upload(file_path)
+            if self.check_errors_in_response(response):
+                self.content_info = [file_basename, self.upload_file_layout,
+                                     self.upload_files_button_info, response[2], self.delete_uploaded_file]
+                self.signal.new_content.emit()
+                self.upload_file_list.append([response[2], file_basename])
+        self.signal.set_button.emit()
+
+    def attach_file(self):
+        self.ui.pushButton_sendMessage.setVisible(False)
+        file_path = QtWidgets.QFileDialog.getOpenFileName(
+            self, 'Open File', '/Users/zhenya_rs6/Desktop/TestFiles')[0]
+        threading.Thread(target=self.upload_file_thread, args=(
+            http_settings.UPLOAD_TYPE, file_path), daemon=True).start()
+
+    def delete_uploaded_file(self):
+        sender = self.sender()
+
+    def set_button(self):
+        self.ui.pushButton_sendMessage.setVisible(True)
 
     def notify(self, sender_id, reciever):
         self.sound.play()
@@ -192,6 +256,8 @@ class Window(QtWidgets.QWidget):
 class New_message_event_handle(QObject):
     message_processing = pyqtSignal()
     show_content_info = pyqtSignal()
+    new_content = pyqtSignal()
+    set_button = pyqtSignal()
 
 
 if __name__ == "__main__":
@@ -217,5 +283,6 @@ if __name__ == "__main__":
     application.ui.pushButton_switch.clicked.connect(application.switch_to_private)
     application.ui.pushButton_toall.clicked.connect(application.return_to_all)
     application.ui.pushbutton_Disconnect.clicked.connect(application.leave)
+    application.ui.pushButton_uploadFile.clicked.connect(application.attach_file)
 
     sys.exit(app.exec_())

@@ -11,7 +11,6 @@ class HttpClient():
 
     def connect_to_server(self, address, port):
         self.connection = http.client.HTTPConnection(address, port)
-        print(self.connection)
 
     def get_unique_file_id(self):
         self.unique_file_id += 1
@@ -32,7 +31,7 @@ class HttpClient():
         file_extension = os.path.splitext(full_file_name)[1]
         file_size = os.path.getsize(file_path)
         headers = {http_settings.CONTENT_NAME: file_name, http_settings.CONTENT_EXT: file_extension,
-                   http_settings.CONTENT_ID: str(self.client_id), http_settings.CONTENT_LEN: str(file_size)}
+                   http_settings.CLIENT_ID: str(self.client_id), http_settings.CONTENT_LEN: str(file_size)}
         self.connection.request(method='TEST', url='/', headers=headers)
         response = self.connection.getresponse()
         error = response.getheader(http_settings.ERROR)
