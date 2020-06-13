@@ -13,12 +13,17 @@ class Window(QtWidgets.QWidget):
         self.ui.setupUi(self)
         self.clients = {}
         self.history_list = []
+        self.content_list = []
         self.client_info = {}
         self.MODE_CLIENTS = '03'
         self.MODE_CONNECT = '01'
         self.MODE_DISCONNECT = '02'
         self.MODE_COMMON = '00'
         self.MODE_HISTORY = '04'
+        self.MODE_CONTENT = '05'
+        self.MODE_DELETE_CONTENT = '06'
+        self.CONTENT_NAME_KEY = 'content-name'
+        self.CONTENT_INFO_KEY = 'content-info'
 
         self.MARKER_ALL = '10'
 
@@ -96,6 +101,20 @@ class Window(QtWidgets.QWidget):
 
         if mode == self.MODE_COMMON:
             final_message = self.common_message(mode, client_id, reciever, login, message_converted)
+        if mode == self.MODE_CONTENT:
+            if reciever == self.MARKER_ALL:
+                content = message_content[self.CONTENT_INFO_KEY].split('~')
+                print(content)
+                for i in range(1, len(content), 2):
+                    self.content_list.append([client_id, reciever, content[i], content[i+1]])
+            final_message = self.common_message(mode, client_id, reciever, login, message_content)
+
+        if mode == self.MODE_DELETE_CONTENT:
+            content = message_content[self.CONTENT_INFO_KEY].split('~')
+            if reciever == self.MARKER_ALL:
+                for content_info in self.content_list:
+                    if content_info[2] == content[0]:
+                        self.content_list.remove(content_info)
 
         if mode == self.MODE_CONNECT or mode == self.MODE_DISCONNECT:
             final_message = self.common_message(mode, client_id, reciever, login, message_converted)

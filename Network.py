@@ -19,6 +19,10 @@ class TCPTools(QtWidgets.QWidget):
         self.MODE_DISCONNECT = '02'
         self.MODE_COMMON = '00'
         self.MODE_HISTORY = '04'
+        self.MODE_CONTENT = '05'
+        self.MODE_DELETE_CONTENT = '06'
+        self.CONTENT_NAME_KEY = 'content-name'
+        self.CONTENT_INFO_KEY = 'content-info'
 
         self.MARKER_ALL = '10'
 
@@ -38,8 +42,10 @@ class TCPTools(QtWidgets.QWidget):
 
     def sending(self, mode, reciever, message):
         time = strftime("%H:%M:%S %d-%m-%Y", localtime())
-        message = f' AT {time} : {message}'
+        if mode != self.MODE_CONTENT and mode != self.MODE_DELETE_CONTENT:
+            message = f' AT {time} : {message}'
         final_message = {1: mode, 2: reciever, 3: self.login, 4: message}
+
         try:
             self.socket.send(self.serialize(final_message))
         except OSError:

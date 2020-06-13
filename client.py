@@ -24,6 +24,10 @@ class Window(QtWidgets.QWidget):
         self.MODE_DISCONNECT = '02'
         self.MODE_COMMON = '00'
         self.MODE_HISTORY = '04'
+        self.MODE_CONTENT = '05'
+        self.MODE_DELETE_CONTENT = '06'
+        self.CONTENT_NAME_KEY = 'content-name'
+        self.CONTENT_INFO_KEY = 'content-info'
 
         self.MARKER_ALL = '10'
         self.message_list = []
@@ -59,6 +63,63 @@ class Window(QtWidgets.QWidget):
         layout.addWidget(button)
         button_dict[button] = info
         button.clicked.connect(action)
+
+    def download_file(self):
+        sender = self.sender_info
+        for button, file_id in self.download_files_button_info.items():
+            if sender == button:
+                for download_file_info in self.download_file_list:
+                    if download_file_info[2] == file_id:
+                        file_path = QtWidgets.QFileDialog.getSaveFileName(
+                            self, 'Save file', f'/Users/zhenya_rs6/Desktop/Load/{download_file_info[3]}')[0]
+                        if file_path:
+                            response = self.HTTP_client.download(file_id, file_path)
+                            self.check_errors_in_response(response)
+                        break
+
+    def delete_downloaded_file(self):
+        sender = self.sender_info
+        for button, file_id in self.download_files_button_info.items():
+            if sender == button:
+                button.setParent(None)
+                deleted_button = button
+                for download_file_info in self.download_file_list:
+                    if download_file_info[2] == file_id:
+                        response = self.HTTP_client.delete_downloaded_file(file_id)
+                        if self.check_errors_in_response(response):
+                            content = f'{file_id}~{download_file_info[3]}'
+                            self.sending(self.MODE_DELETE_CONTENT, self.reciever_address,
+                                         f'delete -> @{download_file_info[3]}', content, True)
+                            self.download_file_list.remove(download_file_info)
+                            break
+                break
+        self.download_files_button_info.pop(deleted_button)
+
+    def show_file_info(self):
+        sender = self.sender_info
+        for button, file_id in self.download_files_button_info.items():
+            if sender == button:
+                for download_file_info in self.download_file_list:
+                    if download_file_info[2] == file_id:
+                        response = self.HTTP_client.get_file_info(file_id, download_file_info[3])
+                        if self.check_errors_in_response(response):
+                            self.show_notification(response[2])
+
+    def show_context_menu(self):
+        self.sender_info = self.sender()
+        message_box = QtWidgets.QMessageBox()
+        message_box.setText('Select')
+        button = Qt.QPushButton('Dowload')
+        button.clicked.connect(self.download_file)
+        message_box.addButton(button, QtWidgets.QMessageBox.AcceptRole)
+        button = Qt.QPushButton('Delete')
+        button.clicked.connect(self.delete_downloaded_file)
+        message_box.addButton(button, QtWidgets.QMessageBox.AcceptRole)
+        button = Qt.QPushButton('Info')
+        button.clicked.connect(self.show_file_info)
+        message_box.addButton(button, QtWidgets.QMessageBox.AcceptRole)
+
+        message_box.exec_()
 
     def search(self):
         ClIENT_HOST = socket.gethostbyname('localhost')
@@ -195,6 +256,17 @@ class Window(QtWidgets.QWidget):
     def show_notification(self, info):
         message_box = QMessageBox.information(self, 'title', info)
 
+    def process_content(self, mode, sender, reciever, content):
+        if mode == self.MODE_CONTENT:
+            content_info = content[self.CONTENT_INFO_KEY].split('~')
+            for i in range(1, len(content_info), 2):
+                file_basename = content_info[i+1]
+                if reciever == self.reciever_address:
+                    self.add_button_into_layout(file_basename, self.download_file_layout,
+                                                self.download_files_button_info, content_info[i], self.show_context_menu)
+                self.download_file_list.append(
+                    [sender, reciever, content_info[i], content_info[i+1]])
+
     def message_processing(self):
         processed_data = {}
         data = self.TCPSocket.flush()
@@ -229,7 +301,11 @@ class Window(QtWidgets.QWidget):
 
             self.notify(sender_id, reciever)
             self.renew_clients(mode, sender_id, login)
-            self.show_message(sender_id, reciever, message)
+            if mode != self.MODE_CONTENT and mode != self.MODE_DELETE_CONTENT:
+                self.show_message(sender_id, reciever, message)
+            else:
+                self.show_message(sender_id, reciever, message[self.CONTENT_NAME_KEY])
+            self.process_content(mode, sender_id, reciever, message)
             self.message_list.append(f'{mode}~{sender_id}~{reciever}~{login}~{message}')
 
     def check_errors_in_response(self, response):
@@ -253,13 +329,24 @@ class Window(QtWidgets.QWidget):
         if message:
             self.sending(self.MODE_COMMON, self.reciever_address, message, True)
 
-    def sending(self, mode, reciever, message, append):
+        if len(self.upload_file_list) != 0:
+            content_info = ''
+            content_name = 'upload ->'
+            for upload_file in self.upload_file_list:
+                content_info += f'~{upload_file[0]}~{upload_file[1]}'
+                content_name += f'@{upload_file[1]}'
+            print(content_info)
+            self.sending(self.MODE_CONTENT, self.reciever_address, content_name, content_info, True)
+
+    def sending(self, mode, reciever, message, content='', append='False'):
         time = strftime("%H:%M:%S %d-%m-%Y", localtime())
+
         final_message = f'{time}{message}'
+        if content != '':
+            message = {self.CONTENT_NAME_KEY: message, self.CONTENT_INFO_KEY: content}
         if mode != self.MODE_HISTORY:
             self.message_list.append(f'{mode}~me~{reciever}~me~{final_message}')
         self.TCPSocket.sending(mode, reciever, message)
-
         if append:
             self.ui.textEdit_chatView.append(f'{final_message}')
 
