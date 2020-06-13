@@ -104,6 +104,17 @@ class Window(QtWidgets.QWidget):
 
     def delete_uploaded_file(self):
         sender = self.sender()
+        for button, file_id in self.upload_files_button_info.items():
+            if sender == button:
+                response = self.HTTP_client.delete_uploaded_file(file_id)
+                if self.check_errors_in_response(response):
+                    button.setParent(None)
+                    self.upload_files_button_info.pop(button)
+                    for upload_file_info in self.upload_file_list:
+                        if upload_file_info[0] == file_id:
+                            self.upload_file_list.remove(upload_file_info)
+                            break
+                    return
 
     def set_button(self):
         self.ui.pushButton_sendMessage.setVisible(True)

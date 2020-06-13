@@ -38,10 +38,12 @@ class StorageHandler:
         return file_id
 
     def delete_file(self, file_id, client_id, type):
+
         try:
             full_file_name = self.file_id_and_name[file_id]
+            print(full_file_name)
             if type == http_settings.UPLOAD_TYPE:
-                file_size = os.path.getsize(f'{self.SERVICE_FILE_PATH}{full_file_name}')
+                file_size = os.path.getsize(f'{http_settings.SERVICE_FILE_PATH}{full_file_name}')
                 self.client_upload_length[client_id] -= file_size
 
             os.remove(f'{http_settings.SERVICE_FILE_PATH}{full_file_name}')
@@ -53,7 +55,6 @@ class StorageHandler:
             return False
 
     def check_file(self, file_name, file_ext, file_length, client_id):
-
         err = 'size reached'
         if file_length <= self.max_file_size:
             err = 'unacceptable_ext'
@@ -161,6 +162,7 @@ class HttpRequestHandler(BaseHTTPRequestHandler):
             self.end_headers()
 
     def do_DELETE(self):
+        print(self.headers)
         file_id = int(storage.get_value_from_header(self.headers, http_settings.CONTENT_ID))
         client_id = int(storage.get_value_from_header(self.headers, http_settings.CLIENT_ID))
         type = storage.get_value_from_header(self.headers, http_settings.REMOVABLE_TYPE)
