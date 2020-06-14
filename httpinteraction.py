@@ -4,7 +4,6 @@ import time
 from PyQt5 import QtCore, QtWidgets
 from time import localtime, strftime
 import pickle
-
 import os
 from http.server import BaseHTTPRequestHandler, HTTPServer
 import http_settings
@@ -51,9 +50,11 @@ class StorageHandler:
             return False
 
     def check_file(self, file_name, file_ext, file_length, client_id):
-        err = 'client exists'
-        if str(client_id) != http_settings.NONE:
-            return
+        err = 'file exists'
+        if not file_name in self.loaded_file_names:
+            err = 'client exists'
+            if str(client_id) != http_settings.NONE:
+                return
 
         return err
 
