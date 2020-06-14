@@ -15,11 +15,11 @@ class HttpClient():
         self.current_size = 0
 
     def check_file(self, file_name, file_ext, file_length):
-        err = 'size reached'
+        err = 'large file'
         if file_length <= self.max_file_size:
             err = 'unacceptable_ext'
             if not file_ext in self.unacceptable_ext:
-                err = 'max_file_size'
+                err = 'total size reached'
                 if self.current_size+file_length <= self.max_files_total_size:
                     err = 'file exists'
                     for key in self.uploading_buffer.keys():
