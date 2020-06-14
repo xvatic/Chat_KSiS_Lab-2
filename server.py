@@ -22,6 +22,7 @@ class Window(QtWidgets.QWidget):
         self.MODE_HISTORY = '04'
         self.MODE_CONTENT = '05'
         self.MODE_DELETE_CONTENT = '06'
+        self.MODE_FILES_HISTORY = '07'
         self.CONTENT_NAME_KEY = 'content-name'
         self.CONTENT_INFO_KEY = 'content-info'
 
@@ -54,7 +55,7 @@ class Window(QtWidgets.QWidget):
 
     def request_processing(self, mode, login, client_id, connection):
         if mode == self.MODE_CONNECT:
-            clients = {1: '03', 2: self.client_info}
+            clients = {1: self.MODE_CLIENTS, 2: self.client_info}
             connection.send(self.serialize(clients))
             self.client_info[client_id] = login
         if mode == self.MODE_DISCONNECT:
@@ -63,13 +64,20 @@ class Window(QtWidgets.QWidget):
 
         if mode == self.MODE_HISTORY:
             i = 2
-            history = {1: '04'}
+            history = {1: self.MODE_HISTORY}
             for m in self.history_list:
                 message = self.string_to_dictionary(m)
                 history[i] = message
                 i += 1
             history = self.serialize(history)
             connection.send(history)
+            time.sleep(1)
+            loaded_content = ''
+            for content_info in self.content_list:
+                loaded_content += f'~{content_info[0]}~{content_info[1]}~{content_info[2]}~{content_info[3]}'
+            files = {1: self.MODE_FILES_HISTORY, 2: loaded_content}
+            files = self.serialize(files)
+            connection.send(files)
 
     def new_message_serv(self):
         mode = ''

@@ -26,6 +26,7 @@ class Window(QtWidgets.QWidget):
         self.MODE_HISTORY = '04'
         self.MODE_CONTENT = '05'
         self.MODE_DELETE_CONTENT = '06'
+        self.MODE_FILES_HISTORY = '07'
         self.CONTENT_NAME_KEY = 'content-name'
         self.CONTENT_INFO_KEY = 'content-info'
 
@@ -41,8 +42,7 @@ class Window(QtWidgets.QWidget):
         self.sender_info = ''
         self.reciever_address = self.MARKER_ALL
         self.sound = pyglet.media.load('files/sms_uvedomlenie_na_iphone.wav', streaming=False)
-        self.dialog_layout = self.set_layout_with_scroll_area(
-            self.ui.verticalLayout, self.ui.scrollArea)
+
         self.upload_file_layout = self.set_layout_with_scroll_area(
             self.ui.horizontalLayout, self.ui.scrollArea_2)
         self.download_file_layout = self.set_layout_with_scroll_area(
@@ -63,6 +63,20 @@ class Window(QtWidgets.QWidget):
         layout.addWidget(button)
         button_dict[button] = info
         button.clicked.connect(action)
+
+    def view_upload_files(self):
+        for upload_file_info in self.upload_file_list:
+            file_basename = upload_file_info[1]
+            self.add_button_into_layout(file_basename, self.download_file_layout,
+                                        self.download_files_button_info, upload_file_info[0], self.show_context_menu)
+            self.download_file_list.append(
+                ['me', self.reciever_address, upload_file_info[0], upload_file_info[1]])
+
+    def clear_upload_file_layout(self):
+        for button, file_id in self.upload_files_button_info.items():
+            button.setParent(None)
+        self.upload_file_list.clear()
+        self.upload_files_button_info.clear()
 
     def download_file(self):
         sender = self.sender_info
@@ -202,6 +216,29 @@ class Window(QtWidgets.QWidget):
             data = message.split('~')
             if (data[1] == self.reciever_address and data[2] != self.MARKER_ALL) or (data[1] == 'me' and data[2] == self.reciever_address):
                 self.show_message(data[1], data[2], data[4])
+        self.show_files()
+
+    def show_files(self):
+        for button, file_id in self.download_files_button_info.items():
+            button.setParent(None)
+        self.download_files_button_info.clear()
+        if self.reciever_address == self.MARKER_ALL:
+            for download_file_info in self.download_file_list:
+                if download_file_info[1] == self.reciever_address:
+                    file_basename = download_file_info[3]
+                    self.add_button_into_layout(file_basename, self.download_file_layout,
+                                                self.download_files_button_info, download_file_info[2], self.show_context_menu)
+
+        else:
+            for download_file_info in self.download_file_list:
+                if download_file_info[1] == self.reciever_address:
+                    file_basename = download_file_info[3]
+                    self.add_button_into_layout(file_basename, self.download_file_layout,
+                                                self.download_files_button_info, download_file_info[2], self.show_context_menu)
+                elif download_file_info[0] == self.reciever_address and download_file_info[1] != self.MARKER_ALL:
+                    file_basename = download_file_info[3]
+                    self.add_button_into_layout(file_basename, self.download_file_layout,
+                                                self.download_files_button_info, download_file_info[2], self.show_context_menu)
 
     def return_to_all(self):
         self.ui.textEdit_chatView.clear()
@@ -210,6 +247,8 @@ class Window(QtWidgets.QWidget):
             data = message.split('~')
             if data[2] == self.MARKER_ALL:
                 self.show_message(data[1], data[2], data[4])
+
+        self.show_files()
 
     def history(self):
         self.sending(self.MODE_HISTORY, self.MARKER_ALL, '04', False)
@@ -293,6 +332,14 @@ class Window(QtWidgets.QWidget):
                     self.show_message(data[1], data[2], data[4])
 
                 return
+
+            if processed_data[1] == self.MODE_FILES_HISTORY:
+                print('W')
+                files = processed_data[2].split('~')
+                for i in range(1, len(files), 4):
+                    self.download_file_list.append([files[i], files[i+1], files[i+2], files[i+3]])
+                self.show_files()
+                return
             mode = processed_data[1]
             sender_id = processed_data[2]
             reciever = processed_data[3]
@@ -337,6 +384,9 @@ class Window(QtWidgets.QWidget):
                 content_name += f'@{upload_file[1]}'
             print(content_info)
             self.sending(self.MODE_CONTENT, self.reciever_address, content_name, content_info, True)
+            self.view_upload_files()
+            self.clear_upload_file_layout()
+            self.HTTP_client.clear_loaded_data()
 
     def sending(self, mode, reciever, message, content='', append='False'):
         time = strftime("%H:%M:%S %d-%m-%Y", localtime())

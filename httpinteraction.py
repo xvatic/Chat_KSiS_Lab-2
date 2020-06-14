@@ -41,7 +41,6 @@ class StorageHandler:
 
         try:
             full_file_name = self.file_id_and_name[file_id]
-            print(full_file_name)
             if type == http_settings.UPLOAD_TYPE:
                 file_size = os.path.getsize(f'{http_settings.SERVICE_FILE_PATH}{full_file_name}')
                 self.client_upload_length[client_id] -= file_size
@@ -55,17 +54,10 @@ class StorageHandler:
             return False
 
     def check_file(self, file_name, file_ext, file_length, client_id):
-        err = 'size reached'
-        if file_length <= self.max_file_size:
-            err = 'unacceptable_ext'
-            if not file_ext in self.unacceptable_ext:
-                err = 'max_file_size'
-                if self.client_upload_length[client_id]+file_length <= self.max_files_total_size:
-                    err = 'file name'
-                    if not file_name in self.loaded_file_names:
-                        err = 'client exists'
-                        if str(client_id) != http_settings.NONE:
-                            return
+        err = 'client exists'
+        if str(client_id) != http_settings.NONE:
+            return
+
         return err
 
     def get_unique_client_id(self):
@@ -134,6 +126,7 @@ class HttpRequestHandler(BaseHTTPRequestHandler):
         err = storage.check_file(file_name, file_ext, file_length, client_id)
 
         if not err:
+
             file = self.rfile.read(file_length)
             file_id = storage.save_file(file, file_name, file_ext, file_length, client_id)
             self.send_response(200)

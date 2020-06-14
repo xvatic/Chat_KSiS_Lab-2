@@ -8,6 +8,23 @@ class HttpClient():
         self.client_id = None
         self.unique_file_id = 256
         self.file_info = {}
+        self.max_file_size = 85000
+        self.max_files_total_size = 150000
+        self.uploading_buffer = {}
+        self.unacceptable_ext = ['.exe']
+        self.current_size = 0
+
+    def check_file(self, file_name, file_ext, file_length):
+        err = 'size reached'
+        if file_length <= self.max_file_size:
+            err = 'unacceptable_ext'
+            if not file_ext in self.unacceptable_ext:
+                err = 'max_file_size'
+                if self.current_size+file_length <= self.max_files_total_size:
+                    err = 'file exists'
+                    if file_name not in self.uploading_buffer:
+                        return
+        return err
 
     def connect_to_server(self, address, port):
         self.connection = http.client.HTTPConnection(address, port)
@@ -35,20 +52,25 @@ class HttpClient():
         self.connection.request(method='TEST', url='/', headers=headers)
         response = self.connection.getresponse()
         error = response.getheader(http_settings.ERROR)
-        if not error:
+        client_error = self.check_file(full_file_name, file_extension, file_size)
+        if not error and not client_error:
             try:
                 file = open(file_path, 'rb').read()
                 self.connection.request(method='PUT', url='/', body=file, headers=headers)
                 response = self.connection.getresponse()
                 info = response.getheader(http_settings.ERROR)
                 if not error:
+                    self.current_size += file_size
+                    self.uploading_buffer[full_file_name]
                     file_id = response.getheader(http_settings.CONTENT_ID)
+                    self.uploading_buffer[file_id] = [full_file_name, file_size]
                     self.file_info[file_id] = file_name
                     info = file_id
             except Exception as error:
                 info = error
             return response.status, response.reason, info
-
+        else:
+            return 0, 'u', error
         return response.status, response.reason, error
 
     def download(self, file_id, file_path):
@@ -70,7 +92,7 @@ class HttpClient():
         error = response.getheader(http_settings.ERROR)
         if not error:
             file_size = response.getheader(http_settings.CONTENT_SIZE)
-            return response.status, response.reason, f'Name => {file_name}\nSize => {file_size}'
+            return response.status, response.reason, f'Name : {file_name}\nSize : {file_size}'
         return response.status, response.reason, error
 
     def delete_file(self, file_id, removable_type):
@@ -82,6 +104,7 @@ class HttpClient():
         return response.status, response.reason, error
 
     def delete_uploaded_file(self, file_id):
+
         return self.delete_file(file_id, http_settings.UPLOAD_TYPE)
 
     def delete_downloaded_file(self, file_id):
@@ -90,4 +113,6 @@ class HttpClient():
     def clear_loaded_data(self):
         headers = {http_settings.CLIENT_ID: str(self.client_id)}
         self.connection.request(method='CLEAR', url='/', headers=headers)
+        self.current_size = 0
+        self.uploading_buffer.clear()
         response = self.connection.getresponse()
