@@ -123,6 +123,7 @@ class Window(QtWidgets.QWidget):
                 for content_info in self.content_list:
                     if content_info[2] == content[0]:
                         self.content_list.remove(content_info)
+            final_message = self.common_message(mode, client_id, reciever, login, message_content)
 
         if mode == self.MODE_CONNECT or mode == self.MODE_DISCONNECT:
             final_message = self.common_message(mode, client_id, reciever, login, message_converted)

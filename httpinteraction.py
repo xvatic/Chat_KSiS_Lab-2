@@ -12,12 +12,9 @@ import http_settings
 
 class StorageHandler:
     def __init__(self):
-        self.max_file_size = 24000000
-        self.max_files_total_size = 150000
         self.unique_client_id = 0
         self.unique_file_id = 0
         self.loaded_file_names = []
-        self.unacceptable_ext = ['.exe']
         self.client_upload_length = {}
         self.file_id_and_name = {}
 
@@ -113,7 +110,7 @@ class HttpRequestHandler(BaseHTTPRequestHandler):
             self.send_response(200)
             self.end_headers()
         else:
-            self.send_response(411)
+            self.send_response(403)
             self.send_header(http_settings.ERROR, err)
             self.end_headers()
 
@@ -134,7 +131,7 @@ class HttpRequestHandler(BaseHTTPRequestHandler):
             self.end_headers()
             return
 
-        self.send_response(411)
+        self.send_response(403)
         self.send_header(http_settings.ERROR, err)
         self.end_headers()
 

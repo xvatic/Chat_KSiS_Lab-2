@@ -103,7 +103,7 @@ class Window(QtWidgets.QWidget):
                         if self.check_errors_in_response(response):
                             content = f'{file_id}~{download_file_info[3]}'
                             self.sending(self.MODE_DELETE_CONTENT, self.reciever_address,
-                                         f'delete -> @{download_file_info[3]}', content, True)
+                                         f'delete  : [FILE]{download_file_info[3]}', content, True)
                             self.download_file_list.remove(download_file_info)
                             break
                 break
@@ -207,6 +207,11 @@ class Window(QtWidgets.QWidget):
         self.ui.comboBox_chatParticipants.clear()
         self.ui.textEdit_chatView.clear()
 
+        for button, file_id in self.download_files_button_info.items():
+            button.setParent(None)
+        self.download_files_button_info.clear()
+        self.download_file_list.clear()
+
     def switch_to_private(self):
         for address in self.clients:
             if self.clients[address] == str(self.ui.comboBox_chatParticipants.currentText()):
@@ -300,11 +305,26 @@ class Window(QtWidgets.QWidget):
             content_info = content[self.CONTENT_INFO_KEY].split('~')
             for i in range(1, len(content_info), 2):
                 file_basename = content_info[i+1]
-                if reciever == self.reciever_address:
+                if sender == self.reciever_address:
+                    self.add_button_into_layout(file_basename, self.download_file_layout,
+                                                self.download_files_button_info, content_info[i], self.show_context_menu)
+                elif reciever == self.reciever_address and self.reciever_address == self.MARKER_ALL:
                     self.add_button_into_layout(file_basename, self.download_file_layout,
                                                 self.download_files_button_info, content_info[i], self.show_context_menu)
                 self.download_file_list.append(
                     [sender, reciever, content_info[i], content_info[i+1]])
+        if mode == self.MODE_DELETE_CONTENT:
+            content_info = content[self.CONTENT_INFO_KEY].split('~')
+            for i in range(0, len(content_info), 2):
+                for download_file_info in self.download_file_list:
+                    if download_file_info[2] == content_info[i]:
+                        for button, file_id in self.download_files_button_info.items():
+                            if file_id == content_info[i]:
+                                button.setParent(None)
+                                self.download_files_button_info.pop(button)
+                                break
+                        self.download_file_list.remove(download_file_info)
+                        break
 
     def message_processing(self):
         processed_data = {}
@@ -334,7 +354,6 @@ class Window(QtWidgets.QWidget):
                 return
 
             if processed_data[1] == self.MODE_FILES_HISTORY:
-                print('W')
                 files = processed_data[2].split('~')
                 for i in range(1, len(files), 4):
                     self.download_file_list.append([files[i], files[i+1], files[i+2], files[i+3]])
@@ -349,7 +368,11 @@ class Window(QtWidgets.QWidget):
             self.notify(sender_id, reciever)
             self.renew_clients(mode, sender_id, login)
             if mode != self.MODE_CONTENT and mode != self.MODE_DELETE_CONTENT:
-                self.show_message(sender_id, reciever, message)
+                try:
+                    self.show_message(sender_id, reciever, message[self.CONTENT_NAME_KEY])
+                except:
+                    print(message)
+                    self.show_message(sender_id, reciever, message)
             else:
                 self.show_message(sender_id, reciever, message[self.CONTENT_NAME_KEY])
             self.process_content(mode, sender_id, reciever, message)
@@ -374,14 +397,14 @@ class Window(QtWidgets.QWidget):
     def convert(self):
         message = self.ui.textEdit_messageInput.toPlainText()
         if message:
-            self.sending(self.MODE_COMMON, self.reciever_address, message, True)
+            self.sending(self.MODE_COMMON, self.reciever_address, message, '', True)
 
         if len(self.upload_file_list) != 0:
             content_info = ''
-            content_name = 'upload ->'
+            content_name = 'upload :'
             for upload_file in self.upload_file_list:
                 content_info += f'~{upload_file[0]}~{upload_file[1]}'
-                content_name += f'@{upload_file[1]}'
+                content_name += f'[FILE]{upload_file[1]}'
             print(content_info)
             self.sending(self.MODE_CONTENT, self.reciever_address, content_name, content_info, True)
             self.view_upload_files()

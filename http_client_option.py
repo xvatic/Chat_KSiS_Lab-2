@@ -11,7 +11,7 @@ class HttpClient():
         self.max_file_size = 85000
         self.max_files_total_size = 150000
         self.uploading_buffer = {}
-        self.unacceptable_ext = ['.exe']
+        self.unacceptable_ext = ['.exe', '.out']
         self.current_size = 0
 
     def check_file(self, file_name, file_ext, file_length):
@@ -22,8 +22,11 @@ class HttpClient():
                 err = 'max_file_size'
                 if self.current_size+file_length <= self.max_files_total_size:
                     err = 'file exists'
-                    if file_name not in self.uploading_buffer:
-                        return
+                    for key in self.uploading_buffer.keys():
+                        if self.uploading_buffer[key][0] == file_name:
+
+                            return err
+                    return
         return err
 
     def connect_to_server(self, address, port):
@@ -61,7 +64,6 @@ class HttpClient():
                 info = response.getheader(http_settings.ERROR)
                 if not error:
                     self.current_size += file_size
-                    self.uploading_buffer[full_file_name]
                     file_id = response.getheader(http_settings.CONTENT_ID)
                     self.uploading_buffer[file_id] = [full_file_name, file_size]
                     self.file_info[file_id] = file_name
@@ -70,7 +72,7 @@ class HttpClient():
                 info = error
             return response.status, response.reason, info
         else:
-            return 0, 'u', error
+            return 0, 'UPLOADING ERROR', client_error
         return response.status, response.reason, error
 
     def download(self, file_id, file_path):
@@ -104,7 +106,8 @@ class HttpClient():
         return response.status, response.reason, error
 
     def delete_uploaded_file(self, file_id):
-
+        self.current_size -= self.uploading_buffer[file_id][1]
+        self.uploading_buffer.pop(file_id)
         return self.delete_file(file_id, http_settings.UPLOAD_TYPE)
 
     def delete_downloaded_file(self, file_id):
